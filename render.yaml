@@ -1,0 +1,37 @@
+# Render Blueprint — one-click deploy for Shadow.
+# Dashboard → Blueprints → New → connect repo krishna248842-afk/shadow → Apply.
+services:
+  - type: web
+    name: shadow
+    runtime: docker
+    # Persistent disks are NOT available on Render's free plan.
+    # starter (~$7/mo) mounts /var/data so your catalog, orders & wallet
+    # survive restarts. On plan: free the app still runs, but the SQLite
+    # file is wiped on every redeploy/restart — only use free to try it.
+    plan: starter
+    healthCheckPath: /login
+    envVars:
+      - key: DATABASE_PATH
+        value: /var/data/shadow.db
+      - key: APP_PASSWORD
+        sync: false        # you choose this — protects your store
+      - key: APP_BASE_URL
+        sync: false        # e.g. https://shadow-xxxx.onrender.com (shown after first deploy)
+      - key: WHATSAPP_VERIFY_TOKEN
+        sync: false        # any random string you invent
+      - key: CRON_SECRET
+        sync: false        # any random string you invent
+      - key: RAZORPAY_WEBHOOK_SECRET
+        sync: false        # from Razorpay → Webhooks (optional)
+      - key: WHATSAPP_APP_SECRET
+        sync: false        # Meta app → Settings → Basic → App Secret (verifies webhook signatures)
+      - key: AI_BASE_URL
+        value: https://api.openai.com/v1
+      - key: AI_MODEL
+        value: gpt-4o-mini
+      - key: AI_API_KEY
+        sync: false        # optional here — better pasted in the app's Connectors screen
+    disk:
+      name: shadow-data
+      mountPath: /var/data
+      sizeGB: 1
