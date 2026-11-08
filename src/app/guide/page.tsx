@@ -94,6 +94,7 @@ export default function GuidePage() {
         <ol className="list-decimal space-y-1 pl-5">
           <li>Meta app → WhatsApp → API Setup → copy Phone Number ID + System User token (permanent).</li>
           <li>Webhook URL: <code>/api/webhooks/whatsapp</code> on your deployed domain; verify token from your <code>WHATSAPP_VERIFY_TOKEN</code>.</li>
+          <li>Set <code>WHATSAPP_APP_SECRET</code> (Meta app → Settings → Basic → App Secret). Shadow then verifies <code>X-Hub-Signature-256</code> on every webhook call — nobody can spoof customer messages or make your number send paid texts.</li>
           <li>Subscribe to <code>messages</code>. Now every inbound DM gets an AI reply grounded in your catalog — price, stock, COD, delivery ETA, “full address + pincode bhejo, abhi booking kar deta hoon”.</li>
           <li>Every conversation lands in your <b>Inbox (Dashboard activity)</b> so you can close manually anytime.</li>
           <li><b>Approved templates</b> (required for business-initiated messages): create “order_confirmation”, “out_for_delivery”, “payment_reminder” in Meta → WhatsApp → Message Templates, get them approved (24–48h), then automate with a small workflow. Direct broadcasts to cold lists stay manual — paste AI Studio copy into your Broadcast list.</li>

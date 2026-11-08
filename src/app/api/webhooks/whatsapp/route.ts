@@ -1,6 +1,7 @@
 // WhatsApp Cloud API webhook — verification handshake + live AI auto-replies.
 // Your public URL: https://YOUR_DOMAIN/api/webhooks/whatsapp
 import { NextRequest, NextResponse } from 'next/server';
+import crypto from 'crypto';
 import { all, run } from '@/lib/db';
 import { getSetting } from '@/lib/settings';
 import { aiChat } from '@/lib/ai';
@@ -11,15 +12,29 @@ export async function GET(req: NextRequest) {
   const mode = q.get('hub.mode');
   const token = q.get('hub.verify_token');
   const challenge = q.get('hub.challenge');
-  const expected = process.env.WHATSAPP_VERIFY_TOKEN || 'shadow-verify-token';
-  if (mode === 'subscribe' && token === expected) {
+  const expected = process.env.WHATSAPP_VERIFY_TOKEN || '';
+  if (mode === 'subscribe' && expected && token === expected) {
     return new NextResponse(challenge ?? '', { status: 200, headers: { 'Content-Type': 'text/plain' } });
   }
   return new NextResponse('Verification failed', { status: 403 });
 }
 
 export async function POST(req: NextRequest) {
-  const body = await req.json().catch(() => null);
+  const raw = await req.text();
+  // Meta signs webhook calls with your App Secret (X-Hub-Signature-256).
+  // When WHATSAPP_APP_SECRET is set we enforce it, so strangers can't trigger
+  // paid replies to phone numbers. Without it, we process (local dev only).
+  const appSecret = process.env.WHATSAPP_APP_SECRET || '';
+  if (appSecret) {
+    const sig = req.headers.get('x-hub-signature-256') || '';
+    const expectedSig = 'sha256=' + crypto.createHmac('sha256', appSecret).update(raw).digest('hex');
+    const a = Buffer.from(sig), b = Buffer.from(expectedSig);
+    if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+      return NextResponse.json({ error: 'invalid signature' }, { status: 401 });
+    }
+  }
+  let body: any = null;
+  try { body = JSON.parse(raw); } catch { return NextResponse.json({ status: 'bad json' }, { status: 400 }); }
   const incoming = body ? parseIncoming(body) : null;
   if (!incoming) return NextResponse.json({ status: 'ignored' });
 
@@ -51,17 +66,17 @@ export async function POST(req: NextRequest) {
   const token = await getSetting('whatsapp_access_token');
   const phoneId = await getSetting('whatsapp_phone_number_id');
   let sent = false;
+  let sendError = '';
   if (token && phoneId) {
     try {
       await sendWhatsAppText(token, phoneId, incoming.from, reply);
       sent = true;
     } catch (e: any) {
-      await run(`INSERT INTO interactions (channel, handle, direction, text, ai_replied) VALUES ('whatsapp', ?, 'out', ?, 1)`,
-        [`${incoming.profileName} (${incoming.from})`, `[SEND FAILED] ${(e?.message ?? '').slice(0, 200)}`]);
+      sendError = (e?.message ?? String(e)).slice(0, 200);
     }
   }
   await run(`INSERT INTO interactions (channel, handle, direction, text, ai_replied) VALUES ('whatsapp', ?, 'out', ?, 1)`,
-    [`${incoming.profileName} (${incoming.from})`, reply]);
+    [`${incoming.profileName} (${incoming.from})`, sendError ? `[SEND FAILED] ${sendError} — draft: ${reply}` : reply]);
 
   return NextResponse.json({ status: 'ok', replied: sent });
 }

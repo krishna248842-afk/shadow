@@ -4,7 +4,11 @@ services:
   - type: web
     name: shadow
     runtime: docker
-    plan: free
+    # Persistent disks are NOT available on Render's free plan.
+    # starter (~$7/mo) mounts /var/data so your catalog, orders & wallet
+    # survive restarts. On plan: free the app still runs, but the SQLite
+    # file is wiped on every redeploy/restart — only use free to try it.
+    plan: starter
     healthCheckPath: /login
     envVars:
       - key: DATABASE_PATH
@@ -19,6 +23,8 @@ services:
         sync: false        # any random string you invent
       - key: RAZORPAY_WEBHOOK_SECRET
         sync: false        # from Razorpay → Webhooks (optional)
+      - key: WHATSAPP_APP_SECRET
+        sync: false        # Meta app → Settings → Basic → App Secret (verifies webhook signatures)
       - key: AI_BASE_URL
         value: https://api.openai.com/v1
       - key: AI_MODEL

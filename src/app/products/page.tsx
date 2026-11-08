@@ -1,10 +1,10 @@
 import Link from 'next/link';
 import {
-  Package, Plus, Upload, Trash2, ExternalLink, Sparkles, X, Info, BadgePercent, Boxes,
+  Package, Plus, Upload, ExternalLink, Sparkles, X, BadgePercent, Boxes,
 } from 'lucide-react';
 import { all, get } from '@/lib/db';
 import { inr, pct, num } from '@/lib/format';
-import { saveProduct, clearSampleProducts } from '@/lib/actions';
+import { saveProduct } from '@/lib/actions';
 import DeleteProductButton from '@/components/DeleteProductButton';
 import ImportCsv from '@/components/ImportCsv';
 
@@ -14,8 +14,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
   const { edit, panel } = await searchParams;
   const editId = Number(edit || 0);
   const editing = editId ? await get('SELECT * FROM products WHERE id = ?', [editId]) : null;
-  const products = await all('SELECT * FROM products ORDER BY is_sample ASC, id DESC');
-  const sampleCount = products.filter((p: any) => p.is_sample).length;
+  const products = await all('SELECT * FROM products ORDER BY id DESC');
   const showForm = panel === 'add' || !!editing;
 
   return (
@@ -32,16 +31,6 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
           <Link href="/products?panel=add" className="btn-primary !py-2 text-xs"><Plus size={14} /> Add product</Link>
         </div>
       </div>
-
-      {sampleCount > 0 && (
-        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-amber-500/25 bg-amber-500/[0.07] px-4 py-3">
-          <Info size={16} className="shrink-0 text-amber-300" />
-          <p className="min-w-0 flex-1 text-[11.5px] text-amber-100/90"><b>{sampleCount} starter sample products</b> loaded so you can explore. Replace them with your real Meesho picks — or clear them in one click.</p>
-          <form action={async () => { 'use server'; await clearSampleProducts(); }}>
-            <button className="btn-ghost !border-amber-500/30 !py-1.5 text-[11px] !text-amber-200"><Trash2 size={12} /> Clear samples</button>
-          </form>
-        </div>
-      )}
 
       {/* Import panel */}
       {panel === 'import' && (
@@ -144,7 +133,6 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
                     <span className="mt-1.5 text-[9px] uppercase tracking-widest">No image</span>
                   </div>
                 )}
-                {p.is_sample ? <span className="badge-amber absolute left-3 top-3 !text-[9px]">SAMPLE</span> : null}
                 {discount > 0 && <span className="badge-lime absolute right-3 top-3 !text-[9px]">{Math.round(discount)}% OFF</span>}
               </div>
               <div className="flex flex-1 flex-col p-4">

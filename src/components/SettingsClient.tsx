@@ -51,7 +51,7 @@ export default function SettingsClient({ settings: s }: { settings: Record<Setti
       {/* Danger zone */}
       <div className="card border-red-900/40 p-5">
         <p className="section-title flex items-center gap-2 !text-red-400/80"><AlertTriangle size={13} /> Danger zone</p>
-        <p className="mt-1.5 text-[11px] text-zinc-500">Wipes products (non-sample), orders, posts, campaigns, interactions, wallet history and withdrawals. Keeps your connected keys and business profile. Export CSV first if you need records.</p>
+        <p className="mt-1.5 text-[11px] text-zinc-500">Wipes ALL products, orders, posts, campaigns, interactions, wallet history and withdrawals. Keeps your connected keys and business profile. Export CSV first if you need records.</p>
         <button
           className="btn-danger mt-3 !py-2 text-[11px]"
           disabled={resetting}

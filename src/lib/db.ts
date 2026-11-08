@@ -154,7 +154,6 @@ async function init(): Promise<ShadowDB> {
   db.run(SCHEMA);
   const handle: ShadowDB = { db, path: file, dirtySince: 0 };
   flush(handle);
-  await seedIfEmpty(handle);
   return handle;
 }
 
@@ -199,32 +198,4 @@ export async function get<T = any>(sql: string, params: SqlValue[] = []): Promis
 export async function lastId(): Promise<number> {
   const row = await get<{ id: number }>('SELECT last_insert_rowid() AS id');
   return row?.id ?? 0;
-}
-
-// ── Starter catalog (clearly marked samples the owner can edit/delete) ─────
-async function seedIfEmpty(h: ShadowDB) {
-  const stmt = h.db.prepare('SELECT COUNT(*) AS c FROM products');
-  stmt.step();
-  const count = (stmt.getAsObject() as any).c as number;
-  stmt.free();
-  if (count > 0) return;
-
-  const samples: Array<[string, string, number, number, number, string]> = [
-    // name, category, cost (Meesho supplier price), your sell price, MRP, tags
-    ['Women Embroidered Kurti With Palazzo — Designer Ethnic Wear', 'Women Kurti', 285, 449, 1299, 'kurti,palazzo,ethnic,women,fashion'],
-    ['Men Solid Casual Cotton Shirt — Regular Fit', 'Men Shirts', 240, 399, 1099, 'shirt,men,cotton,casual,office'],
-    ['Stainless Steel Insulated Water Bottle 1L — Keeps Hot/Cold 24h', 'Home & Kitchen', 190, 349, 999, 'bottle,steel,kitchen,gift'],
-    ['Smart LED Watch with Bluetooth Calling & SpO2', 'Electronics', 420, 699, 2999, 'smartwatch,electronics,gadget,fitness'],
-    ['Cotton Bedsheet with 2 Pillow Covers — King Size Printed', 'Home & Kitchen', 310, 499, 1499, 'bedsheet,home,bedroom,cotton'],
-    ['Kids Printed T-Shirt Pack of 3 — Cotton Blend', 'Kids Wear', 260, 429, 1199, 'kids,tshirt,pack,summer'],
-  ];
-  for (const [name, category, cost, sell, mrp, tags] of samples) {
-    h.db.run(
-      `INSERT INTO products (name, category, cost_price, sell_price, mrp, commission_pct, stock, tags, is_sample, description)
-       VALUES (?,?,?,?,?,0,100,?,1,?)`,
-      [name, category, cost, sell, mrp, tags,
-       `${name}. Premium quality, free shipping across India, COD available. Order karo aur aaj hi delivery pao!`]
-    );
-  }
-  flush(h);
 }

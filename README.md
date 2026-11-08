@@ -36,18 +36,22 @@ npm run setup     # creates .env.local + data dir
 npm run dev       # http://localhost:3000
 ```
 
+No seed data, no demo mode — the catalog, wallet and charts read only what you put in.
+
 Open it on your phone on the same WiFi: `http://<your-computer-ip>:3000` → Add to Home Screen.
 
-**First 10 minutes:** Catalog → clear samples → add 3 real Meesho products → Connectors → paste AI key → AI Studio → generate → Composer → post. Done.
+The store starts **empty** — zero fake products, zero fake numbers. Every figure on the dashboard is computed from what you actually enter. **First 10 minutes:** Catalog → add 3 real Meesho products → Connectors → paste AI key → AI Studio → generate → Composer → post. Done.
 
 ---
 
 ## ☁️ Deploy to the cloud (your phone, anywhere)
 
-### Render (recommended — free, persistent disk)
-1. Push is already here. Go to **dashboard.render.com → Blueprints → New Blueprint Instance** → connect `krishna248842-afk/shadow` → Render reads [`render.yaml`](render.yaml).
+### Render (recommended — the link your phone can open anywhere)
+1. Go to **dashboard.render.com → Blueprints → New Blueprint Instance** → connect `krishna248842-afk/shadow` → Render reads [`render.yaml`](render.yaml).
 2. Set `APP_PASSWORD` (your store password), `APP_BASE_URL` (URL Render assigns), `WHATSAPP_VERIFY_TOKEN`, `CRON_SECRET`.
-3. Deploy → open URL on phone → Chrome ⋮ → **Add to Home Screen** → feels like a native app.
+3. Deploy → open the URL on your phone → Chrome ⋮ → **Add to Home Screen** → feels like a native app.
+
+> ⚠️ **Disk reality check.** Render’s free plan does **not** allow persistent disks. The blueprint uses the **Starter plan (~$7/mo)** with a 1 GB disk at `/var/data` so your catalog/orders/wallet survive restarts. If you flip the blueprint to `plan: free`, the app still runs but your SQLite database resets on every redeploy — fine to try, useless for a real store.
 
 ### Docker (any VPS, Oracle Free Tier, Railway, Fly.io)
 ```bash
@@ -62,7 +66,7 @@ See [`.env.example`](.env.example). The critical one for public deploys: **`APP_
 > ⚠️ **Not Vercel.** Shadow uses SQLite on disk. Vercel’s serverless filesystem is ephemeral — your data would vanish. Use Render/VPS/Docker (or wire a persistent DB later).
 
 ### 24/7 scheduled posts
-Create a free cron at [cron-job.org](https://cron-job.org) → URL: `https://YOUR-URL/api/cron/tick?secret=YOUR_CRON_SECRET` → every 5 minutes. Posts due at any hour go out by themselves.
+Create a free cron at [cron-job.org](https://cron-job.org) → URL: `https://YOUR-URL/api/cron/tick?secret=YOUR_CRON_SECRET` → every 5 minutes. Posts due at any hour go out by themselves. The endpoint **fails closed**: without `CRON_SECRET` set on the server it refuses to run.
 
 ---
 
@@ -72,7 +76,7 @@ Create a free cron at [cron-job.org](https://cron-job.org) → URL: `https://YOU
 |---|---|---|
 | **AI Brain** | DeepSeek / OpenAI / Groq / Gemini / OpenRouter | All AI writing + WhatsApp auto-replies + COO brief |
 | **Meta** | developers.facebook.com (Business app) | FB Page posts, IG Business posts, Marketing API campaigns, insights sync |
-| **WhatsApp Cloud API** | Same Meta app → WhatsApp product | 24/7 AI auto-replies to customer DMs from your catalog |
+| **WhatsApp Cloud API** | Same Meta app → WhatsApp product | 24/7 AI auto-replies to customer DMs from your catalog. Set `WHATSAPP_APP_SECRET` and every webhook call is HMAC-verified |
 | **YouTube** | Google Cloud → YouTube Data API v3 + OAuth web client | Direct Shorts upload from AI Studio |
 | **X** | developer.x.com (free tier) | One-tap posts from Composer |
 | **Razorpay** | dashboard.razorpay.com | Payment links per order + webhook auto-marks orders PAID |

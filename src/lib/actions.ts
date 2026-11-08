@@ -57,8 +57,8 @@ export const saveProduct = safe(async (formData: FormData) => {
     );
   } else {
     await run(
-      `INSERT INTO products (name, category, meesho_url, image_url, description, tags, cost_price, sell_price, mrp, commission_pct, stock, is_sample)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,0)`,
+      `INSERT INTO products (name, category, meesho_url, image_url, description, tags, cost_price, sell_price, mrp, commission_pct, stock)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
       fields as any,
     );
   }
@@ -69,12 +69,6 @@ export const saveProduct = safe(async (formData: FormData) => {
 
 export const deleteProduct = safe(async (id: number) => {
   await run('DELETE FROM products WHERE id = ?', [id]);
-  revalidatePath('/products');
-  return ok();
-});
-
-export const clearSampleProducts = safe(async () => {
-  await run('DELETE FROM products WHERE is_sample = 1');
   revalidatePath('/products');
   return ok();
 });
@@ -110,8 +104,8 @@ export const importProductsCSV = safe(async (csv: string) => {
     const name = r.name || r.product || '';
     if (!name) continue;
     await run(
-      `INSERT INTO products (name, category, meesho_url, image_url, cost_price, sell_price, mrp, stock, tags, is_sample)
-       VALUES (?,?,?,?,?,?,?,?,?,0)`,
+      `INSERT INTO products (name, category, meesho_url, image_url, cost_price, sell_price, mrp, stock, tags)
+       VALUES (?,?,?,?,?,?,?,?,?)`,
       [name, r.category || 'General', r.meesho_url || '', r.image_url || '',
        Number(r.cost_price || r.cost || 0), Number(r.sell_price || r.price || 0), Number(r.mrp || 0),
        Number(r.stock || 50), r.tags || ''],
@@ -167,7 +161,7 @@ export const advanceOrder = safe(async (orderId: number) => {
   if (!next) return fail(o.status === 'delivered' ? 'Already delivered' : 'Cannot advance this order');
   await run(`UPDATE orders SET status=?, updated_at=datetime('now') WHERE id=?`, [next, orderId]);
   if (next === 'delivered' && !o.profit_credited) {
-    const profit = Number(o.total) - Number(o.cost) - Number(o.total) * 0; // product cost incl. shipping in cost price
+    const profit = Number(o.total) - Number(o.cost); // cost price includes Meesho-side product + shipping
     await run(`INSERT INTO wallet_txns (type, amount, note, ref_id) VALUES ('order_profit', ?, ?, ?)`,
       [profit, `Profit — order #${orderId} (${o.product_name})`, orderId]);
     await run(`UPDATE orders SET profit_credited = 1 WHERE id = ?`, [orderId]);
@@ -354,7 +348,7 @@ export const syncCampaignInsights = safe(async () => {
   let updated = 0;
   for (const row of insights) {
     const spend = Number(row.spend || 0);
-    const r = await run(
+    await run(
       `UPDATE campaigns SET spend=?, impressions=?, clicks=? WHERE meta_campaign_id=?`,
       [spend, Number(row.impressions || 0), Number(row.clicks || 0), row.campaign_id],
     );
@@ -490,7 +484,7 @@ export const resetStoreData = safe(async () => {
   for (const t of ['orders', 'posts', 'campaigns', 'interactions', 'wallet_txns', 'withdrawals']) {
     await run(`DELETE FROM ${t}`);
   }
-  await run('DELETE FROM products WHERE is_sample = 0');
+  await run('DELETE FROM products');
   revalidatePath('/');
   return ok();
 });
