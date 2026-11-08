@@ -1,0 +1,31 @@
+# Render Blueprint — one-click deploy for Shadow.
+# Dashboard → Blueprints → New → connect repo krishna248842-afk/shadow → Apply.
+services:
+  - type: web
+    name: shadow
+    runtime: docker
+    plan: free
+    healthCheckPath: /login
+    envVars:
+      - key: DATABASE_PATH
+        value: /var/data/shadow.db
+      - key: APP_PASSWORD
+        sync: false        # you choose this — protects your store
+      - key: APP_BASE_URL
+        sync: false        # e.g. https://shadow-xxxx.onrender.com (shown after first deploy)
+      - key: WHATSAPP_VERIFY_TOKEN
+        sync: false        # any random string you invent
+      - key: CRON_SECRET
+        sync: false        # any random string you invent
+      - key: RAZORPAY_WEBHOOK_SECRET
+        sync: false        # from Razorpay → Webhooks (optional)
+      - key: AI_BASE_URL
+        value: https://api.openai.com/v1
+      - key: AI_MODEL
+        value: gpt-4o-mini
+      - key: AI_API_KEY
+        sync: false        # optional here — better pasted in the app's Connectors screen
+    disk:
+      name: shadow-data
+      mountPath: /var/data
+      sizeGB: 1
